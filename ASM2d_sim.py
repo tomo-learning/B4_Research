@@ -12,7 +12,7 @@ f=2 # レンズの焦点距離
 distance = np.arange(0, 5 + dx, dx) #レンズからの距離
 
 x=np.linspace(-N/2,N/2-1,N)
-gx=rect((x)/512) #レンズのマスク
+gx=rect((x)/512) # 入射波面の振幅分布
 fx = np.zeros_like(gx, dtype=np.complex128)
 
 # レンズの変換を適用
