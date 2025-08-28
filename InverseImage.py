@@ -12,18 +12,28 @@ f=2 # レンズの焦点距離
 distance = np.arange(0, 5 + dx, dx) #レンズからの距離
 
 x=np.linspace(-N/2,N/2-1,N)
-gx=rect((x)/4096) # 入射波面の振幅分布
-for i in range(len(gx)):
-    if i==1700:
-       gx[i]=1.0
-    else:
-       gx[i]=0.0
 
-fx = np.zeros_like(gx, dtype=np.complex128)
+#物体面の振幅分布
+u0=[0.0 for _ in range(len(x))]
+for i in range(len(u0)):
+    if i==1054:
+       u0[i]=1.0
+a=4 #レンズと物体の距離
+
+# ASMによるレンズ前面の波面の計算
+nux=ffp.fftfreq(N,dx)
+nu_sq=1/wavelen**2-nux**2
+mask=nu_sq>0
+phase_func=np.zeros(len(nux),dtype=np.complex128)
+phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*a)
+ux=ffp.ifft(ffp.fft(u0)*phase_func)
+
+Px=rect((x)/1024) # 瞳関数
+fx = np.zeros_like(Px, dtype=np.complex128)
 
 # レンズの変換を適用
 for i in range(N):
-    fx[i]=gx[i]*np.exp(-1j*np.pi*(x[i]*dx)**2/(wavelen*f))
+    fx[i]=ux[i]*Px[i]*np.exp(-1j*np.pi*(x[i]*dx)**2/(wavelen*f))
 
 amplitude_map = np.zeros((len(distance), N))
 
@@ -37,6 +47,8 @@ for i in range(len(distance)):
     phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*z)
     diffraction=ffp.ifft(ffp.fft(fx)*phase_func)
     amplitude_map[i, :] = np.abs(diffraction)**2
+    if z==a:
+        image=amplitude_map[i,:]
 
 
 x1=x*dx # 実空間の座標
@@ -45,6 +57,12 @@ for i in range(len(distance)):
     if np.max(amplitude_map[i, :]) != 0:
         amplitude_map[i, :] /= np.max(amplitude_map[i, :])  # 各距離で正規化
 
+fig,ax=plt.subplots(figsize=(5,4))
+ax.plot(x,image)
+ax.set_xlabel("x")
+plt.show()
+
+
 # 振幅強度のマップを表示
 fig1, ax1 = plt.subplots(figsize=(8, 6))
 extent = [distance[0], distance[-1], x1[0], x1[-1]]
@@ -52,6 +70,6 @@ im = ax1.imshow(amplitude_map.T, extent=extent, origin='lower', aspect='auto', c
 ax1.set_xlabel("$z$")
 ax1.set_ylabel("$x$") 
 fig1.colorbar(im, ax=ax1, label="Amplitude Intensity")
-fig1.savefig("ASM1d_amplitude_map.png")
+fig1.savefig("Erectimage_amplitude_map.png")
 plt.show()
 
