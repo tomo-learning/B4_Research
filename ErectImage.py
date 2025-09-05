@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import fftpack as ffp
 import matplotlib.pyplot as plt
+import copy
 
 def rect(x):
     return np.where(np.abs(x) <= 0.5, 1 , 0)
@@ -26,30 +27,31 @@ x_mm = (np.arange(N) - N//2) * dx
 D1 = 1.5  # 1枚目のレンズの直径(mm)
 D2 = 1.5  # 2枚目のレンズの直径(mm)
 
-# ASMによるレンズ前面の波面の計算
-nux=ffp.fftfreq(N,dx)
-nu_sq=1/wavelen**2-nux**2
-mask=nu_sq>0
-phase_func=np.zeros(len(nux),dtype=np.complex128)
-phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*a)
-ux=ffp.ifft(ffp.fft(u0)*phase_func)
+# # ASMによるレンズ前面の波面の計算
+# nux=ffp.fftfreq(N,dx)
+# nu_sq=1/wavelen**2-nux**2
+# mask=nu_sq>0
+# phase_func=np.zeros(len(nux),dtype=np.complex128)
+# phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*a)
+# ux=ffp.ifft(ffp.fft(u0)*phase_func)
 
 
 amplitude_map = np.zeros((len(distance), N)) #伝播の様子の可視化用の配列
-
+pre_diffraction=np.zeros(N,dtype=np.complex128)
+pre_diffraction=copy.copy(u0)
 #物体面と一枚目のレンズ面の間の波面を各距離で計算
 for i in range(len(distance)):
     if distance[i]>a:
         break
-    z=distance[i]
     nux=ffp.fftfreq(N,dx)
     nu_sq=1/wavelen**2-nux**2
     mask=nu_sq>0
     phase_func=np.zeros(len(nux),dtype=np.complex128)
-    phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*z)
-    diffraction=ffp.ifft(ffp.fft(u0)*phase_func)
+    phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*dx)
+    diffraction=ffp.ifft(ffp.fft(pre_diffraction)*phase_func)
+    pre_diffraction=copy.copy(diffraction)
     amplitude_map[i, :] = np.abs(diffraction)**2
-
+ux=copy.copy(pre_diffraction)
 
 Px1=rect(x_mm / D1) # 一枚目レンズの瞳関数
 fx = np.zeros_like(Px1, dtype=np.complex128)
@@ -59,26 +61,27 @@ for i in range(N):
     fx[i]=ux[i]*Px1[i]*np.exp(-1j*np.pi*(x[i]*dx)**2/(wavelen*f))
 
 #一枚目のレンズと二枚目のレンズの間の波面を各距離で計算
+pre_diffraction=fx
 for i in range(len(distance)):
     if not a<distance[i]<a+b:
         continue
-    z=distance[i]-a
     nux=ffp.fftfreq(N,dx)
     nu_sq=1/wavelen**2-nux**2
     mask=nu_sq>0
     phase_func=np.zeros(len(nux),dtype=np.complex128)
-    phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*z)
-    diffraction=ffp.ifft(ffp.fft(fx)*phase_func)
+    phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*dx)
+    diffraction=ffp.ifft(ffp.fft(pre_diffraction)*phase_func)
+    pre_diffraction=diffraction
     amplitude_map[i, :] = np.abs(diffraction)**2
-
+gx=pre_diffraction
 
 #二枚目のレンズ前面の波面を計算
-nux=ffp.fftfreq(N,dx)
-nu_sq=1/wavelen**2-nux**2
-mask=nu_sq>0
-phase_func=np.zeros(len(nux),dtype=np.complex128)
-phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*b)
-gx=ffp.ifft(ffp.fft(fx)*phase_func)
+# nux=ffp.fftfreq(N,dx)
+# nu_sq=1/wavelen**2-nux**2
+# mask=nu_sq>0
+# phase_func=np.zeros(len(nux),dtype=np.complex128)
+# phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*b)
+# gx=ffp.ifft(ffp.fft(fx)*phase_func)
 
 
 Px2=rect(x_mm / D2) # 二枚目のレンズの瞳関数
@@ -88,27 +91,28 @@ hx = np.zeros_like(Px2, dtype=np.complex128)
 for i in range(N):
     hx[i]=gx[i]*Px2[i]*np.exp(-1j*np.pi*(x[i]*dx)**2/(wavelen*f))
 
+pre_diffraction=hx
 #二枚目のレンズと結像面の間の波面を各距離で計算
 for i in range(len(distance)):
     if distance[i]<=a+b:
         continue
-    z=distance[i]-a-b
     nux=ffp.fftfreq(N,dx)
     nu_sq=1/wavelen**2-nux**2
     mask=nu_sq>0
     phase_func=np.zeros(len(nux),dtype=np.complex128)
-    phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*z)
-    diffraction=ffp.ifft(ffp.fft(hx)*phase_func)
+    phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*dx)
+    diffraction=ffp.ifft(ffp.fft(pre_diffraction)*phase_func)
+    pre_diffraction=diffraction
     amplitude_map[i, :] = np.abs(diffraction)**2
-
+image=amplitude_map[-1,:]
 #結像面での波面を計算
-nux=ffp.fftfreq(N,dx)
-nu_sq=1/wavelen**2-nux**2
-mask=nu_sq>0
-phase_func=np.zeros(len(nux),dtype=np.complex128)
-phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*c)
-diffraction=ffp.ifft(ffp.fft(hx)*phase_func)
-image=np.abs(diffraction)**2
+# nux=ffp.fftfreq(N,dx)
+# nu_sq=1/wavelen**2-nux**2
+# mask=nu_sq>0
+# phase_func=np.zeros(len(nux),dtype=np.complex128)
+# phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*c)
+# diffraction=ffp.ifft(ffp.fft(hx)*phase_func)
+# image=np.abs(diffraction)**2
 
 
 x1=x*dx # 実空間の座標
