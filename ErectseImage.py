@@ -19,13 +19,13 @@ def crop_center(u, N):
 N=4096*8 # サンプリング数
 Npad=4096*8 # パディングサイズ
 wavelen=532*10**(-6) # 波長(mm)
-dx=0.15e-3 # サンプリング間隔
+dx=0.25e-3 # サンプリング間隔
 print(dx)
 f=1 # レンズの焦点距離
 distance = np.arange(0, 8 + dx, dx) #レンズからの距離
 
 x=np.linspace(-N/2,N/2-1,N)
-xpos=N//2 +13500#物体点の分布位置 N//2は原点
+xpos=N//2 +5000 #物体点の分布位置 N//2は原点 大体N//2+6000以上にすると光束の分裂が発生
 #物体面の振幅分布
 u0=[0.0 for _ in range(len(x))]
 u0[xpos]=1
