@@ -35,8 +35,6 @@ phase_func=np.zeros(len(nux),dtype=np.complex128)
 phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*a)
 ux=ffp.ifft(ffp.fft(u0)*phase_func)
 
-
-
 amplitude_map = np.zeros((len(distance), N))
 
 for i in range(len(distance)):
@@ -65,12 +63,15 @@ for i in range(len(ux)):
     if Px1[i]==1:
         inputIntensity+=np.abs(ux[i])**2
 
+
+
 # レンズの変換を適用
 for i in range(N):
     fx[i]=ux[i]*Px1[i]*np.exp(-1j*np.pi*(x[i]*dx)**2/(wavelen*f))
 
-for i in range(N):
-    fx[i]=ux[i]*Px1[i]*np.exp(-1j*2*np.pi*(np.sqrt(f**2+(x[i]*dx)**2)-f)/wavelen)
+for i in range(len(ux)):
+    if Px1[i]==1:
+        fx[i]=1
 
 for i in range(len(ux)):
     if Px1[i]==1:
