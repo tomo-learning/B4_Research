@@ -8,15 +8,16 @@ def rect(x):
 N=4096*2 # サンプリング数
 wavelen=532*10**(-6) # 波長(mm)
 dx=0.5e-3 # サンプリング間隔
-print(dx)
 f=1 # レンズの焦点距離
 distance = np.arange(0, 8 + dx, dx) #レンズからの距離
 
 x=np.linspace(-N/2,N/2-1,N)
 xpos=6096 #物体点の分布位置
+
 #物体面の振幅分布
 u0=[0.0 for _ in range(len(x))]
 u0[xpos]=1
+
 a=2 #1枚目のレンズと物体の距離
 b=4 #レンズ間の距離
 c=2 #2枚目のレンズと像の距離
