@@ -6,14 +6,24 @@ import copy
 def rect(x):
     return np.where(np.abs(x) <= 0.5, 1 , 0)
 
-N=4096*10 # サンプリング数
+def pad(u, m):
+    up = np.zeros(len(u)+2*m, dtype=complex)
+    up[m:m+len(u)] = u
+    return up
+
+def crop_center(u, N):
+    s = (len(u)-N)//2
+    return u[s:s+N]
+
+N=4096*4 # サンプリング数
 wavelen=532*10**(-6) # 波長(mm)
+Npad=2048*8 # パディングサイズ
 dx=0.25e-3 # サンプリング間隔
 f=1 # レンズの焦点距離
 distance = np.arange(0, 8 + dx, dx) #レンズからの距離
 
 x=np.linspace(-N/2,N/2-1,N)
-xpos=N//2+4000 #物体点の分布位置
+xpos=N//2+8000 #物体点の分布位置
 
 #物体面の振幅分布
 u0=[0.0 for _ in range(len(x))]
@@ -35,6 +45,9 @@ D2 = 1.5  # 2枚目のレンズの直径(mm)
 # phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*a)
 # ux=ffp.ifft(ffp.fft(u0)*phase_func)
 
+nux=ffp.fftfreq(N+Npad*2,dx)
+nu_sq=1/wavelen**2-nux**2
+mask=nu_sq>0
 
 amplitude_map = np.zeros((len(distance), N)) #伝播の様子の可視化用の配列
 pre_diffraction=np.zeros(N,dtype=np.complex128)
@@ -43,13 +56,11 @@ pre_diffraction=copy.copy(u0)
 for i in range(len(distance)):
     if distance[i]>a:
         break
-    nux=ffp.fftfreq(N,dx)
-    nu_sq=1/wavelen**2-nux**2
-    mask=nu_sq>0
     phase_func=np.zeros(len(nux),dtype=np.complex128)
     phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*dx)
-    diffraction=ffp.ifft(ffp.fft(pre_diffraction)*phase_func)
-    pre_diffraction=copy.copy(diffraction)
+    padprediff=pad(pre_diffraction,Npad)
+    diffraction=crop_center(ffp.ifft(ffp.fft(padprediff)*phase_func),N)
+    pre_diffraction=diffraction
     amplitude_map[i, :] = np.abs(diffraction)**2
 ux=copy.copy(pre_diffraction)
 
@@ -65,12 +76,10 @@ pre_diffraction=fx
 for i in range(len(distance)):
     if not a<distance[i]<a+b:
         continue
-    nux=ffp.fftfreq(N,dx)
-    nu_sq=1/wavelen**2-nux**2
-    mask=nu_sq>0
     phase_func=np.zeros(len(nux),dtype=np.complex128)
     phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*dx)
-    diffraction=ffp.ifft(ffp.fft(pre_diffraction)*phase_func)
+    padprediff=pad(pre_diffraction,Npad)
+    diffraction=crop_center(ffp.ifft(ffp.fft(padprediff)*phase_func),N)
     pre_diffraction=diffraction
     amplitude_map[i, :] = np.abs(diffraction)**2
 gx=pre_diffraction
@@ -96,12 +105,10 @@ pre_diffraction=hx
 for i in range(len(distance)):
     if distance[i]<=a+b:
         continue
-    nux=ffp.fftfreq(N,dx)
-    nu_sq=1/wavelen**2-nux**2
-    mask=nu_sq>0
     phase_func=np.zeros(len(nux),dtype=np.complex128)
     phase_func[mask]=np.exp(1j*2*np.pi*np.sqrt(nu_sq[mask])*dx)
-    diffraction=ffp.ifft(ffp.fft(pre_diffraction)*phase_func)
+    padprediff=pad(pre_diffraction,Npad)
+    diffraction=crop_center(ffp.ifft(ffp.fft(padprediff)*phase_func),N)
     pre_diffraction=diffraction
     amplitude_map[i, :] = np.abs(diffraction)**2
 image=amplitude_map[-1,:]

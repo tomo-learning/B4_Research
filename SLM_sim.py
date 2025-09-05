@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 def rect(x):
     return np.where(np.abs(x) <= 0.5, 1 , 0)
 
-N=4096*2 # サンプリング数
+N=4096*8 # サンプリング数
 wavelen=532*10**(-6) # 波長(mm)
-dx=0.5e-3 # サンプリング間隔
+dx=0.25e-3 # サンプリング間隔
 f=1 # レンズの焦点距離
 
 x=np.linspace(-N/2,N/2-1,N)
