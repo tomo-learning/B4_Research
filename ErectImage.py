@@ -6,14 +6,14 @@ import copy
 def rect(x):
     return np.where(np.abs(x) <= 0.5, 1 , 0)
 
-N=4096*2 # サンプリング数
+N=4096*10 # サンプリング数
 wavelen=532*10**(-6) # 波長(mm)
-dx=0.5e-3 # サンプリング間隔
+dx=0.25e-3 # サンプリング間隔
 f=1 # レンズの焦点距離
 distance = np.arange(0, 8 + dx, dx) #レンズからの距離
 
 x=np.linspace(-N/2,N/2-1,N)
-xpos=6096 #物体点の分布位置
+xpos=N//2+4000 #物体点の分布位置
 
 #物体面の振幅分布
 u0=[0.0 for _ in range(len(x))]
